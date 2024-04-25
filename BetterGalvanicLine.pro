@@ -61,7 +61,7 @@ vana(end, 1, 40, rgb(255, 255, 0)).
 	init_vana,
 
 	array(hanger_where, 1000, 0),
-	array(hanger_time, 1000, 0),	
+	array(hanger_when, 1000, 0),	
 	array(hanger_operation, 1000, 0),
 	init_array(hanger_operation, 1, [0, 0]),
 
@@ -73,7 +73,7 @@ vana(end, 1, 40, rgb(255, 255, 0)).
 	array(plan, 120, 0),
 	%init_array(plan, 0, [3, 11, 2, 1, 3, 12, 11, 12, 13, 4, 15, 11, 12, 14]),
 	array(first_plan, 120, 0),
-	(make_plan(10000); true),
+	(make_plan(G_Time, 10000); true),
 
 	window(title("Galvanic line"), size(1500, 500), paint_indirectly).
 
@@ -114,38 +114,38 @@ win_func(paint) :-
 time_func(end) :-
 	Elapsed_Time := chronometer() * G_Multiplier,
 	G_Time := G_Time + Elapsed_Time,
-	make_operations(Elapsed_Time),
+	make_operations(G_Time, Elapsed_Time),
 	set_window_text,
 	update_window(_).
 
-make_operations(Elapsed_Time) :-
+make_operations(Current_Time, Elapsed_Time) :-
 	Vana := plan(G_Plan_Br),
 	(Vana > 0 -> 
 		Hanger := vana_hanger(Vana),
 		(Hanger > 0 -> 
-			take(Vana, Hanger, Elapsed_Time)
+			take(Vana, Hanger, Current_Time, Elapsed_Time)
 		else
-			bring(Vana, Elapsed_Time)
+			bring(Vana, Current_Time, Elapsed_Time)
 		)
 	).
 
-take(Vana, Hanger, Elapsed_Time) :-
+take(Vana, Hanger, Current_Time, Elapsed_Time) :-
 	Time_to_go := abs(vana_pos(Vana) - G_Robot) / G_Speed,
-	Wait_time := max(0, hanger_time(Hanger) - Time_to_go),
+	Wait_time := max(0, hanger_when(Hanger) - Current_Time - Time_to_go),
 	Remainder := Elapsed_Time - (Wait_time + Time_to_go),
 	(Remainder < 0 -> 
 		G_Robot := G_Robot + max(0, Elapsed_Time - Wait_time) * G_Speed 
-			* sign(vana_pos(Vana) - G_Robot),
-		hanger_time(Hanger) := hanger_time(Hanger) - Elapsed_Time
+			* sign(vana_pos(Vana) - G_Robot)
 	else
 		hanger_operation(Hanger) := hanger_operation(Hanger) + 1,
 		G_Robot := vana_pos(Vana),
-		G_Hanger := vana_hanger(Vana),
+		G_Hanger := Hanger,
 		vana_hanger(Vana) := 0,
-		bring(Vana, Remainder)
+		New_Current_Time := Current_Time + Wait_time + Time_to_go,
+		bring(Vana, New_Current_Time, Remainder)
 	).
 
-bring(Vana, Elapsed_Time) :-
+bring(Vana, Current_Time, Elapsed_Time) :-
 	Operation := hanger_operation(G_Hanger),
 	Name := program_name(Operation),
 	find_vana(New, Vana, Name),
@@ -156,10 +156,11 @@ bring(Vana, Elapsed_Time) :-
 	else
 		G_Robot := vana_pos(New),
 		vana_hanger(New) := G_Hanger,
-		hanger_time(G_Hanger) := program_stay(G_Hanger),
+		hanger_when(G_Hanger) := Current_Time + program_stay(Operation),
 		G_Hanger := 0,
 		G_Plan_Br := G_Plan_Br + 1,
-		make_operations(Remainder)
+		New_Current_Time := Current_Time + Time_to_go,
+		make_operations(New_Current_Time, Remainder)
 	).
 
 find_vana(New, Vana, Name) :-
@@ -172,16 +173,17 @@ find_vana(New, Vana, Name) :-
 	).
 
 %Choose the best plan by simulating all options
-make_plan(Elapsed_Time) :-
+make_plan(Current_Time, Elapsed_Time) :-
 	(find_occupied_vana(_) ->
 		find_occupied_vana(Vana),
 		first_plan(G_Plan_Br) := Vana,
 		Hanger := vana_hanger(Vana),
-		fake_take(Vana, Hanger, Elapsed_Time)
+		fake_take(Vana, Hanger, Current_Time, Elapsed_Time)
 	else
 		(G_MaxTime < Elapsed_Time ->
 			G_MaxTime := Elapsed_Time,
 			save_plan,
+			write(Elapsed_Time+ " - "),
 			print_plan
 		),
 		fail
@@ -191,23 +193,23 @@ find_occupied_vana(Vana) :-
 	for(Vana, 1, 12),
 		vana_hanger(Vana) > 0.
 
-fake_take(Vana, Hanger, Elapsed_Time) :-
+fake_take(Vana, Hanger, Current_Time, Elapsed_Time) :-
 	Time_to_go := abs(vana_pos(Vana) - G_Robot) / G_Speed,
-	Wait_time := max(0, hanger_time(Hanger) - Time_to_go),
+	Wait_time := max(0, hanger_when(Hanger) - Current_Time - Time_to_go),
 	Remainder := Elapsed_Time - (Wait_time + Time_to_go),
 	(Remainder < 0 -> 
 		G_Robot has_to G_Robot + max(0, Elapsed_Time - Wait_time) * G_Speed 
-			* sign(vana_pos(Vana) - G_Robot),
-		hanger_time(Hanger) has_to hanger_time(Hanger) - Elapsed_Time
+			* sign(vana_pos(Vana) - G_Robot)
 	else
 		hanger_operation(Hanger) has_to hanger_operation(Hanger) + 1,
 		G_Robot has_to vana_pos(Vana),
-		G_Hanger has_to vana_hanger(Vana),
+		G_Hanger has_to Hanger,
 		vana_hanger(Vana) has_to 0,
-		fake_bring(Vana, Remainder)
+		New_Current_Time := Current_Time + Wait_time + Time_to_go,
+		fake_bring(Vana, New_Current_Time, Remainder)
 	).
 
-fake_bring(Vana, Elapsed_Time) :-
+fake_bring(Vana, Current_Time, Elapsed_Time) :-
 	Operation := hanger_operation(G_Hanger),
 	Name := program_name(Operation),
 	find_vana(New, Vana, Name),
@@ -218,10 +220,11 @@ fake_bring(Vana, Elapsed_Time) :-
 	else
 		G_Robot has_to vana_pos(New),
 		vana_hanger(New) has_to G_Hanger,
-		hanger_time(G_Hanger) has_to program_stay(G_Hanger),
+		hanger_when(G_Hanger) has_to Current_Time + program_stay(Operation),
 		G_Hanger has_to 0,
 		G_Plan_Br has_to G_Plan_Br + 1,
-		make_plan(Remainder)
+		New_Current_Time := Current_Time + Time_to_go,
+		make_plan(New_Current_Time, Remainder)
 	).
 
 print_plan :-
@@ -237,7 +240,6 @@ save_plan :-
 		fail.
 
 save_plan.
-
 
 %Initialize the array of bath enumerations
 init_vana :-
