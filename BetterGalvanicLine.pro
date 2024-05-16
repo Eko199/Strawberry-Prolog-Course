@@ -21,12 +21,12 @@ program([
 	ikonom3(10),
 	miene10(10),
 	miene11(10),
-	end(1)
+	end(1000)
 ]).
 
-vana(vhod, 2, 30, rgb(255, 255, 0)).
-vana(sklad, 8, 30, rgb(255, 255, 255)).
-vana(degrease, 1, 50, rgb(255, 200, 200)).
+vana(vhod, 2, 20, rgb(255, 255, 0)).
+vana(sklad, 8, 20, rgb(255, 255, 255)).
+vana(degrease, 1, 40, rgb(255, 200, 200)).
 vana(miene, 1, 40, rgb(0, 255, 255)).
 vana(bayts, 2, 50, rgb(100, 50, 50)).
 vana(ikonom1, 1, 40, rgb(0, 255, 255)).
@@ -46,16 +46,21 @@ vana(end, 1, 40, rgb(255, 255, 0)).
 important(degrease, 3).
 important(bayts, 5).
 important(reduktor, 1).
+important(aktivator, 4).
+important(link_Cu, 2).
+important(electro_Cu, 7).
+important(end, 10).
 
 ?-
-	G_Multiplier := 20,
+	G_Multiplier := 50,
 	G_Speed := 10,
 	G_Robot := 50,
 	G_Hanger := 0,
 	G_Time := 0,
 	G_Plan_Br := 0,
-	G_MaxResult := min_integer,
-	G_Stop_Time := 1200,
+	G_Hanger_Br := 5,
+	G_Start_Time := 0,
+	G_Stop_Time := 200,
 
 	array(vana_pos, 100, 0),
 
@@ -79,8 +84,6 @@ important(reduktor, 1).
 	array(plan, 120, 0),
 	%init_array(plan, 0, [3, 11, 2, 1, 3, 12, 11, 12, 13, 4, 15, 11, 12, 14]),
 	array(first_plan, 120, 0),
-	Result := 0,
-	(make_plan(G_Time, G_Stop_Time, Result); true),
 	chronometer(),
 
 	window(title("Galvanic line"), size(1500, 500), paint_indirectly).
@@ -121,6 +124,19 @@ win_func(paint) :-
 %Operate the robot
 time_func(end) :-
 	Elapsed_Time := chronometer() * G_Multiplier,
+	(G_Time >= G_Start_Time, G_Hanger =:= 0 ->
+		G_Start_Time := G_Start_Time + G_Stop_Time / 2,
+		vana_hanger(35) := 0,
+		(vana_hanger(1) =:= 0 -> 
+			vana_hanger(1) := G_Hanger_Br,
+			G_Hanger_Br := G_Hanger_Br + 1
+		),
+		restore_plan,
+		G_MaxResult := min_integer,
+		Result := 0,
+		(make_plan(G_Time, G_Stop_Time, Result); true),
+		write(chronometer()), nl
+	),
 	G_Time := G_Time + Elapsed_Time,
 	make_operations(G_Time, Elapsed_Time),
 	set_window_text,
@@ -194,9 +210,9 @@ make_plan(Current_Time, Elapsed_Time, Result) :-
 save_result(Result) :-
 	(G_MaxResult < Result ->
 		G_MaxResult := Result,
-		save_plan,
-		write(Result + " - "),
-		print_plan
+		save_plan%,
+		%write(Result + " - "),
+		%print_plan
 	),
 	fail.
 
@@ -226,7 +242,7 @@ fake_bring(Vana, Hanger, Current_Time, Elapsed_Time, Result) :-
 	Operation := hanger_operation(Hanger),
 	Name := program_name(Operation),
 	find_vana(New, Vana, Name),
-	Time_to_go := (vana_pos(New) - G_Robot) / G_Speed,
+	Time_to_go := (vana_pos(New) - vana_pos(Vana)) / G_Speed,
 	Remainder := Elapsed_Time - Time_to_go,
 	(Remainder < 0 -> 
 		save_result(Result + Remainder)
@@ -240,7 +256,7 @@ fake_bring(Vana, Hanger, Current_Time, Elapsed_Time, Result) :-
 		Burnout := -1 * Important,
 		(Remainder > program_stay(Operation) ->
 			New_Result := Result + Important * program_stay(Operation) 
-						- Burnout * (Remainder - program_stay(Operation))
+						+ Burnout * (Remainder - program_stay(Operation))
 		else
 			New_Result := Result + Important * Remainder
 		),
@@ -259,7 +275,17 @@ save_plan :-
 		plan(I) := first_plan(I),
 		fail.
 
-save_plan.
+save_plan :-
+	plan(G_Plan_Br + 1) := 0.
+
+restore_plan :-
+	for(I, 0, G_Plan_Br),
+		first_plan(I) := plan(I),
+		fail.
+
+restore_plan :-
+	first_plan(G_Plan_Br + 1) := 0.
+
 
 %Initialize the array of bath enumerations
 init_vana :-
