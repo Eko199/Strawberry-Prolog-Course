@@ -134,6 +134,7 @@ time_func(end) :-
 		restore_plan,
 		G_MaxResult := min_integer,
 		Result := 0,
+		G_Plan_Br := 0,
 		(make_plan(G_Time, G_Stop_Time, Result); true),
 		write(chronometer()), nl
 	),
@@ -233,7 +234,7 @@ fake_take(Vana, Hanger, Current_Time, Elapsed_Time, Result) :-
 		hanger_operation(Hanger) has_to hanger_operation(Hanger) + 1,
 		vana_hanger(Vana) has_to 0,
 		New_Current_Time := Current_Time + Wait_time + Time_to_go,
-		Burnout := -1 * program_important(Operation),
+		Burnout := program_important(Operation),
 		New_Result := Result - Burnout * Remainder,
 		fake_bring(Vana, Hanger, New_Current_Time, Remainder, New_Result)
 	).
