@@ -43,6 +43,7 @@ vana(ikonom3, 1, 40, rgb(0, 255, 255)).
 vana(miene, 2, 40, rgb(0, 255, 255)).
 vana(end, 1, 40, rgb(255, 255, 0)).
 
+important(vhod, 1).
 important(degrease, 3).
 important(bayts, 5).
 important(reduktor, 1).
