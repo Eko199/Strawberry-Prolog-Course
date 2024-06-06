@@ -31,7 +31,25 @@ win_func(paint) :-
 					line(Vertical_Line_X, G_Identation + 10 + 200 * Y1, Vertical_Line_X, G_Identation + 190 + 200 * Y1),
 					Horizontal_Line_Y := G_Identation + 10 + 200 * Y1 + 60 * Y2,
 					line(G_Identation + 10 + 200 * X1, Horizontal_Line_Y, G_Identation + 190 + 200 * X1, Horizontal_Line_Y),
+					fail;
+	for(X1, 0, 2),
+		for(Y1, 0, 2),
+			for(X2, 0, 2),
+				for(Y2, 0, 2),
+					get_cell(Value, X1, Y1, X2, Y2),
+					Value \= e,
+					Draw_X := G_Identation + 15 + 200 * X1 + 60 * X2,
+					Draw_Y := G_Identation + 15 + 200 * Y1 + 60 * Y2,
+					(Value = o ->
+						pen(5, rgb(255, 0, 0)),
+						ellipse(Draw_X, Draw_Y, Draw_X + 50, Draw_Y + 50)
+					else
+						pen(5, rgb(0, 0, 255)),
+						line(Draw_X + 5, Draw_Y + 5, Draw_X + 45, Draw_Y + 45),
+						line(Draw_X + 5, Draw_Y + 45, Draw_X + 45, Draw_Y + 5)
+					),
 					fail.
+
 
 win_func(mouse_click(X, Y)) :-
 	G_InGame,
@@ -53,7 +71,8 @@ write(Value),
 		G_Turn := x
 	else
 		G_Turn := o
-	).
+	),
+	update_window(_).
 
 get_cell(Value, Big_X, Big_Y, Small_X, Small_Y) :-
 	table(Table),
