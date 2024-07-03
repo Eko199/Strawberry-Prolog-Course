@@ -2,6 +2,8 @@
 	G_Identation := 50,
 	G_InGame := true,
 	G_Turn := o,
+	G_Next_X := -1,
+	G_Next_Y := -1,
 	window(title("Mega Tic-Tac-Toe"), size(800, 800)).
 
 table([[[[e, e, e], [e, e, e], [e, e, e]], [[e, e, e], [e, e, e], [e, e, e]], [[e, e, e], [e, e, e], [e, e, e]]],
@@ -15,6 +17,33 @@ cell(Value, [_, _, Value], 2).
 place([Value, X, Y], [_, X, Y], Value, 0).
 place([X, Value, Y], [X, _, Y], Value, 1).
 place([X, Y, Value], [X, Y, _], Value, 2).
+
+win([[X, X, X],
+	[_, _, _],
+	[_, _, _]], X).
+win([[_, _, _],
+	[X, X, X],
+	[_, _, _]], X).
+win([[_, _, _],
+	[_, _, _],
+	[X, X, X]], X).
+
+win([[X, _, _],
+	[X, _, _],
+	[X, _, _]], X).
+win([[_, X, _],
+	[_, X, _],
+	[_, X, _]], X).
+win([[_, _, X],
+	[_, _, X],
+	[_, _, X]], X).
+
+win([[X, _, _],
+	[_, X, _],
+	[_, _, X]], X).
+win([[_, _, X],
+	[_, X, _],
+	[X, _, _]], X).
 
 win_func(paint) :-
 	for(I, 1, 2),
@@ -52,6 +81,7 @@ win_func(paint) :-
 
 
 win_func(mouse_click(X, Y)) :-
+	%check if move is legal
 	G_InGame,
 	X >= G_Identation,
 	X =< G_Identation + 600,
@@ -59,14 +89,19 @@ win_func(mouse_click(X, Y)) :-
 	Y =< G_Identation + 600,
 	Big_X := (X - G_Identation) // 200,	
 	Big_Y := (Y - G_Identation) // 200,
+	(G_Next_X =:= -1; G_Next_X =:= Big_X),
+	(G_Next_Y =:= -1; G_Next_Y =:= Big_Y),
 	Small_X := (X - G_Identation - 200 * Big_X) // 66,
 	Small_X < 3,
 	Small_Y := (Y - G_Identation - 200 * Big_Y) // 66,
 	Small_Y < 3,
 	get_cell(Value, Big_X, Big_Y, Small_X, Small_Y),
-write(Value),
 	Value = e,
+	%apply move
+	G_Next_X := Small_X,
+	G_Next_Y := Small_Y,
 	set_cell(G_Turn, Big_X, Big_Y, Small_X, Small_Y),
+	check_small_win(Big_X, Big_Y),
 	(G_Turn = o ->
 		G_Turn := x
 	else
@@ -91,3 +126,15 @@ set_cell(Value, Big_X, Big_Y, Small_X, Small_Y) :-
 	place(New_Big_Row, Big_Row, New_Small_Table, Big_X),
 	place(New_Table, Table, New_Big_Row, Big_Y),
 	set(table(New_Table)).
+
+check_small_win(Big_X, Big_Y) :-
+	table(Table),
+	cell(Big_Row, Table, Big_Y),
+	cell(Small_Table, Big_Row, Big_X),
+	(win(Small_Table, G_Turn) ->
+		(G_Turn = o ->
+			set_cell(owin, Big_X, Big_Y, 0, 0)
+		else
+			set_cell(xwin, Big_X, Big_Y, 0, 0)
+		)
+	).
