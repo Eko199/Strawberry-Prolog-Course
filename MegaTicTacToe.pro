@@ -53,6 +53,9 @@ win_func(paint) :-
 		fail;
 	for(X1, 0, 2),
 		for(Y1, 0, 2),
+			get_cell(Value, X1, Y1, 0, 0),
+			Value \= owin, 
+			Value \= xwin,
 			for(X2, 1, 2),
 				for(Y2, 1, 2),
 					pen(5),
@@ -63,21 +66,35 @@ win_func(paint) :-
 					fail;
 	for(X1, 0, 2),
 		for(Y1, 0, 2),
-			for(X2, 0, 2),
-				for(Y2, 0, 2),
-					get_cell(Value, X1, Y1, X2, Y2),
-					Value \= e,
-					Draw_X := G_Identation + 15 + 200 * X1 + 60 * X2,
-					Draw_Y := G_Identation + 15 + 200 * Y1 + 60 * Y2,
-					(Value = o ->
-						pen(5, rgb(255, 0, 0)),
-						ellipse(Draw_X, Draw_Y, Draw_X + 50, Draw_Y + 50)
-					else
-						pen(5, rgb(0, 0, 255)),
-						line(Draw_X + 5, Draw_Y + 5, Draw_X + 45, Draw_Y + 45),
-						line(Draw_X + 5, Draw_Y + 45, Draw_X + 45, Draw_Y + 5)
-					),
-					fail.
+			get_cell(Win_Value, X1, Y1, 0, 0),
+			(Win_Value\= owin, Win_Value \= xwin ->
+				for(X2, 0, 2),
+					for(Y2, 0, 2),
+						get_cell(Value, X1, Y1, X2, Y2),
+						Value \= e,
+						Draw_X := G_Identation + 15 + 200 * X1 + 60 * X2,
+						Draw_Y := G_Identation + 15 + 200 * Y1 + 60 * Y2,
+						(Value = o ->
+							pen(5, rgb(255, 0, 0)),
+							ellipse(Draw_X, Draw_Y, Draw_X + 50, Draw_Y + 50)
+						else
+							pen(5, rgb(0, 0, 255)),
+							line(Draw_X + 5, Draw_Y + 5, Draw_X + 45, Draw_Y + 45),
+							line(Draw_X + 5, Draw_Y + 45, Draw_X + 45, Draw_Y + 5)
+						),
+						fail
+			else
+				Draw_X := G_Identation + 25 + 200 * X1,
+				Draw_Y := G_Identation + 25 + 200 * Y1,
+				(Win_Value = owin ->
+					pen(10, rgb(255, 0, 0)),
+					ellipse(Draw_X, Draw_Y, Draw_X + 150, Draw_Y + 150)
+				else
+					pen(10, rgb(0, 0, 255)),
+					line(Draw_X + 5, Draw_Y + 5, Draw_X + 145, Draw_Y + 145),
+					line(Draw_X + 5, Draw_Y + 145, Draw_X + 145, Draw_Y + 5)
+				)
+			).
 
 
 win_func(mouse_click(X, Y)) :-
@@ -102,11 +119,7 @@ win_func(mouse_click(X, Y)) :-
 	G_Next_Y := Small_Y,
 	set_cell(G_Turn, Big_X, Big_Y, Small_X, Small_Y),
 	check_small_win(Big_X, Big_Y),
-	(G_Turn = o ->
-		G_Turn := x
-	else
-		G_Turn := o
-	),
+	G_Turn := (G_Turn = o -> x else o),
 	update_window(_).
 
 get_cell(Value, Big_X, Big_Y, Small_X, Small_Y) :-
@@ -132,9 +145,11 @@ check_small_win(Big_X, Big_Y) :-
 	cell(Big_Row, Table, Big_Y),
 	cell(Small_Table, Big_Row, Big_X),
 	(win(Small_Table, G_Turn) ->
-		(G_Turn = o ->
-			set_cell(owin, Big_X, Big_Y, 0, 0)
-		else
-			set_cell(xwin, Big_X, Big_Y, 0, 0)
-		)
+		Win_Mark := (G_Turn = o -> owin else xwin),
+		for(Small_X, 0, 2),
+			for(Small_Y, 0, 2),
+				set_cell(Win_Mark, Big_X, Big_Y, Small_X, Small_Y),
+				fail
 	).
+
+check_small_win(Big_X, Big_Y).
