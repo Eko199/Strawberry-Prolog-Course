@@ -47,7 +47,6 @@ win([[_, _, X],
 
 win_func(paint) :-
 	(G_Next_X > -1, G_Next_Y > -1 ->
-		write(G_Next_X),
 		pen(0),
 		brush(rgb(194, 255, 198)),
 		Draw_X := G_Identation + 200 * G_Next_X,
@@ -127,7 +126,7 @@ win_func(mouse_click(X, Y)) :-
 	%apply move
 	set_cell(G_Turn, Big_X, Big_Y, Small_X, Small_Y),
 	check_small_win(Big_X, Big_Y),
-	G_InGame,
+	no_draw,
 	set_next_destination(Small_X, Small_Y),
 	G_Turn := (G_Turn = o -> x else o),
 	update_window(_).
@@ -160,10 +159,8 @@ check_small_win(Big_X, Big_Y) :-
 			for(Small_Y, 0, 2),
 				set_cell(Win_Mark, Big_X, Big_Y, Small_X, Small_Y),
 				fail;
-		check_big_win)
+		not(check_big_win))
 	).
-
-check_small_win(Big_X, Big_Y).
 
 set_next_destination(Big_X, Big_Y) :-
 	G_Next_X := -1,
@@ -191,3 +188,16 @@ check_big_win :-
 	else
 		message("Game over", "X wins!", !)
 	).
+
+no_draw :-
+	for(Big_X, 0, 2),
+		for(Big_Y, 0, 2),
+			for(Small_X, 0, 2),
+				for(Small_Y, 0, 2),
+					get_cell(e, Big_X, Big_Y, Small_X, Small_Y);
+	G_InGame := false,
+	G_Next_X := -2,
+	G_Next_Y := -2,
+	update_window(_),
+	message("Game over", "It's a draw!", !),
+	fail.
