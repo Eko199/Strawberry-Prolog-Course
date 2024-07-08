@@ -46,6 +46,7 @@ win([[_, _, X],
 	[X, _, _]], X).
 
 win_func(paint) :-
+	Window_Title := "Mega Tic-Tac-Toe: " + (G_Turn = o -> "O's turn." else "X's turn."),
 	(G_Next_X > -1, G_Next_Y > -1 ->
 		pen(0),
 		brush(rgb(194, 255, 198)),
@@ -53,7 +54,10 @@ win_func(paint) :-
 		Draw_Y := G_Identation + 200 * G_Next_Y,
 		rect(Draw_X, Draw_Y, Draw_X + 200, Draw_Y + 200),
 		brush(rgb(255, 255, 255))
+	else (G_Next_X =:= -1, G_Next_Y =:= -1 ->
+		Window_Title := Window_Title + " You can play anywhere!")
 	),
+	set_text(Window_Title, _),
 	for(I, 1, 2),
 		pen(10, rgb(0, 0, 0)),
 		line(G_Identation + 200 * I, G_Identation, G_Identation + 200 * I, G_Identation + 600),
